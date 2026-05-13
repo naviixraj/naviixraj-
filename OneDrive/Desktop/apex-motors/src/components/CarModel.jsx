@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useMemo } from 'react'
 import { useGLTF } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
@@ -11,8 +11,8 @@ export function CarModel({ modelPath, isActive, position, scale, opacity }) {
   const mouse = useRef({ x: 0, y: 0 })
   const targetRotation = useRef({ x: 0, y: 0 })
 
-  // Clone scene to allow multiple instances
-  const clonedScene = scene.clone()
+  // Clone scene to allow multiple instances. Memoized to prevent recreating it on every render tick.
+  const clonedScene = useMemo(() => scene.clone(), [scene])
 
   useEffect(() => {
     if (!isActive) return
@@ -28,14 +28,18 @@ export function CarModel({ modelPath, isActive, position, scale, opacity }) {
     // Apply opacity/emissive to all meshes
     clonedScene.traverse((child) => {
       if (child.isMesh) {
-        if (child.material) {
-          child.material = child.material.clone()
-          child.material.transparent = true
-          child.material.opacity = opacity
-          
-          // Cleanup cloned material on unmount to prevent memory leaks
-          child.userData.clonedMaterial = child.material;
+        // Save the original material so we don't clone a disposed clone
+        if (!child.userData.originalMaterial) {
+          child.userData.originalMaterial = child.material;
         }
+
+        // Always clone from the clean, original material
+        child.material = child.userData.originalMaterial.clone()
+        child.material.transparent = true
+        child.material.opacity = opacity
+        
+        // Cleanup cloned material on unmount or re-run to prevent memory leaks
+        child.userData.clonedMaterial = child.material;
       }
     })
     
@@ -51,13 +55,17 @@ export function CarModel({ modelPath, isActive, position, scale, opacity }) {
   useFrame((state, delta) => {
     if (!groupRef.current) return
 
+    // Continuously rotate clockwise
+    groupRef.current.rotation.y -= delta * 0.5
+
     if (isActive) {
-      targetRotation.current.y += (mouse.current.x * 0.3 - targetRotation.current.y) * 0.05
+      // Still apply slight mouse tilt on X axis (up/down) for interactive feel
       targetRotation.current.x += (mouse.current.y * 0.1 - targetRotation.current.x) * 0.05
-      groupRef.current.rotation.y = targetRotation.current.y
       groupRef.current.rotation.x = targetRotation.current.x
     } else {
-      groupRef.current.rotation.y += delta * 0.1
+      // Smoothly return X tilt to 0 when inactive
+      targetRotation.current.x += (0 - targetRotation.current.x) * 0.05
+      groupRef.current.rotation.x = targetRotation.current.x
     }
   })
 

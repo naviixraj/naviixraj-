@@ -1,4 +1,4 @@
-import { Suspense, useEffect } from 'react'
+import React, { Suspense, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Canvas } from '@react-three/fiber'
 import { Environment, OrbitControls, ContactShadows } from '@react-three/drei'
@@ -27,7 +27,8 @@ export function CarDetails() {
   // A simplified car model component that just renders the GLTF for orbit controls
   const StaticCarModel = ({ modelPath }) => {
     const { scene } = useGLTF(modelPath)
-    return <primitive object={scene} />
+    const clonedScene = React.useMemo(() => scene.clone(), [scene])
+    return <primitive object={clonedScene} />
   }
 
   return (
