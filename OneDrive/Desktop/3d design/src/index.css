@@ -1,124 +1,33 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+@import "tailwindcss";
 
-:root {
-  --font-family: 'Inter', sans-serif;
+@theme {
+  --font-sans: 'Inter', sans-serif;
+  --font-display: 'Syne', sans-serif;
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+@layer base {
+  body {
+    @apply m-0 p-0 select-none bg-[#050505] text-white;
+    font-family: var(--font-sans);
+  }
 
-body {
-  font-family: var(--font-family);
-  overflow: hidden;
-  background-color: #050505;
-  color: #fff;
-  transition: background-color 1.5s ease-in-out;
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+  }
 }
 
 #root {
   width: 100vw;
   height: 100vh;
+  position: relative;
 }
 
-.canvas-container {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 1;
+/* Custom scrollbar to be subtle */
+::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
 }
 
-.ui-layer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 10;
-  pointer-events: none; /* Let interactions pass to canvas */
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 4rem;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  pointer-events: auto;
-}
-
-.logo {
-  font-size: 1.5rem;
-  font-weight: 800;
-  letter-spacing: -0.05em;
-  text-transform: uppercase;
-}
-
-.nav {
-  display: flex;
-  gap: 2rem;
-  font-size: 0.9rem;
-  font-weight: 500;
-  opacity: 0.7;
-}
-
-.hero-title {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 12vw;
-  font-weight: 900;
-  letter-spacing: -0.05em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.05);
-  white-space: nowrap;
-  pointer-events: none;
-  z-index: -1;
-}
-
-.specs-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 2rem;
-  pointer-events: auto;
-  backdrop-filter: blur(10px);
-  background: rgba(255, 255, 255, 0.05);
-  padding: 2rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  max-width: 600px;
-}
-
-.spec-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.spec-label {
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  opacity: 0.5;
-  letter-spacing: 0.1em;
-}
-
-.spec-value {
-  font-size: 2rem;
-  font-weight: 700;
-}
-
-.instruction {
-  position: absolute;
-  bottom: 4rem;
-  right: 4rem;
-  font-size: 0.9rem;
-  opacity: 0.6;
-  text-align: right;
+.glass-panel {
+  @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl;
 }

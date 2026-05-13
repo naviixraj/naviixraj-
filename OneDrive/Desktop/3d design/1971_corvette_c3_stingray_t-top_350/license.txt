@@ -1,0 +1,11 @@
+Model Information:
+* title:	1971 Corvette C3 Stingray T-Top 350
+* source:	https://sketchfab.com/3d-models/1971-corvette-c3-stingray-t-top-350-d06fc557cafb47c995418af60e3e72f8
+* author:	Ddiaz Design (https://sketchfab.com/ddiaz-design)
+
+Model License:
+* license type:	CC-BY-NC-SA-4.0 (http://creativecommons.org/licenses/by-nc-sa/4.0/)
+* requirements:	Author must be credited. No commercial use. Modified versions must have the same license.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "1971 Corvette C3 Stingray T-Top 350" (https://sketchfab.com/3d-models/1971-corvette-c3-stingray-t-top-350-d06fc557cafb47c995418af60e3e72f8) by Ddiaz Design (https://sketchfab.com/ddiaz-design) licensed under CC-BY-NC-SA-4.0 (http://creativecommons.org/licenses/by-nc-sa/4.0/)
