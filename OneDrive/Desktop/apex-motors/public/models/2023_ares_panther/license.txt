@@ -1,0 +1,11 @@
+Model Information:
+* title:	2023 Ares Panther ProgettoUno
+* source:	https://sketchfab.com/3d-models/2023-ares-panther-progettouno-5aafdfb534854f79a5ee5ec75028f60e
+* author:	SIU Car Garage (https://sketchfab.com/Game_mode)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "2023 Ares Panther ProgettoUno" (https://sketchfab.com/3d-models/2023-ares-panther-progettouno-5aafdfb534854f79a5ee5ec75028f60e) by SIU Car Garage (https://sketchfab.com/Game_mode) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
