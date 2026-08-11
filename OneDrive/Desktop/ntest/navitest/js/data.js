@@ -114,7 +114,14 @@ function initCloudSync(onReadyCallback) {
   // 3.5 Second Safety Fallback Timeout
   const safetyTimeout = setTimeout(() => {
     console.warn('⚠️ Cloud Sync timed out! Falling back to local data to prevent hanging screen.');
+    fbStudents = [];
+    fbMovements = [];
+    fbGeofence = null;
     isCloudReady = true;
+    
+    // Seed local admin fallback so they can log in
+    seedIfNeeded();
+
     triggerCallback();
   }, 3500);
 
@@ -319,7 +326,82 @@ function checkGeofence(lat, lng) {
 }
 
 /* ── Seed / Init ─────────────────────────────── */
+function sha256Fallback(ascii) {
+  function rightRotate(value, amount) {
+    return (value >>> amount) | (value << (32 - amount));
+  }
+  var mathPow = Math.pow;
+  var maxWord = mathPow(2, 32);
+  var lengthProperty = 'length';
+  var i, j;
+  var result = '';
+  var words = [];
+  var asciiLength = ascii[lengthProperty] * 8;
+  var hash = [], k = [];
+  var primeCounter = 0;
+  var isComposite = {};
+  for (var candidate = 2; primeCounter < 64; candidate++) {
+    if (!isComposite[candidate]) {
+      for (i = 0; i < 313; i += candidate) {
+        isComposite[i] = 1;
+      }
+      if (primeCounter < 8) {
+        hash[primeCounter] = (mathPow(candidate, .5) * maxWord) | 0;
+      }
+      k[primeCounter] = (mathPow(candidate, 1 / 3) * maxWord) | 0;
+      primeCounter++;
+    }
+  }
+  ascii += '\x80';
+  while (ascii[lengthProperty] % 64 - 56) ascii += '\x00';
+  for (i = 0; i < ascii[lengthProperty]; i++) {
+    j = ascii.charCodeAt(i);
+    if (j >> 8) return;
+    words[i >> 2] |= j << ((3 - i % 4) * 8);
+  }
+  words[words[lengthProperty]] = ((asciiLength / maxWord) | 0);
+  words[words[lengthProperty]] = (asciiLength | 0);
+  for (j = 0; j < words[lengthProperty]; ) {
+    var w = words.slice(j, j += 16);
+    var oldHash = hash.slice(0);
+    hash = hash.slice(0, 8);
+    for (i = 0; i < 64; i++) {
+      var wItem = w[i];
+      if (i >= 16) {
+        var w15 = w[i - 15], w2 = w[i - 2];
+        var s0 = rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3);
+        var s1 = rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10);
+        wItem = w[i] = (w[i - 16] + s0 + w[i - 7] + s1) | 0;
+      }
+      var ch = (hash[4] & hash[5]) ^ (~hash[4] & hash[6]);
+      var maj = (hash[0] & hash[1]) ^ (hash[0] & hash[2]) ^ (hash[1] & hash[2]);
+      var sigma0 = rightRotate(hash[0], 2) ^ rightRotate(hash[0], 13) ^ rightRotate(hash[0], 22);
+      var sigma1 = rightRotate(hash[4], 6) ^ rightRotate(hash[4], 11) ^ rightRotate(hash[4], 25);
+      var temp1 = (hash[7] + sigma1 + ch + k[i] + wItem) | 0;
+      var temp2 = (sigma0 + maj) | 0;
+      hash = [(temp1 + temp2) | 0].concat(hash);
+      hash[4] = (hash[4] + temp1) | 0;
+      hash = hash.slice(0, 8);
+    }
+    for (i = 0; i < 8; i++) {
+      hash[i] = (hash[i] + oldHash[i]) | 0;
+    }
+  }
+  for (i = 0; i < 8; i++) {
+    var word = hash[i];
+    result += ((word >>> 24) & 0xff).toString(16).padStart(2, '0') +
+              ((word >>> 16) & 0xff).toString(16).padStart(2, '0') +
+              ((word >>> 8) & 0xff).toString(16).padStart(2, '0') +
+              (word & 0xff).toString(16).padStart(2, '0');
+  }
+  return result;
+}
+
 async function hashPassword(password) {
+  if (typeof crypto === 'undefined' || !crypto.subtle) {
+    console.warn("⚠️ crypto.subtle not available (insecure context or file://). Using fallback pure JS SHA-256.");
+    return sha256Fallback(password);
+  }
   const msgUint8 = new TextEncoder().encode(password);
   const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
