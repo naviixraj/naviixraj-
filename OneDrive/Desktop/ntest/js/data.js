@@ -73,11 +73,29 @@ function isNowPastCurfew() {
   return now.getHours() > 19 || (now.getHours() === 19 && now.getMinutes() >= 1);
 }
 
-// Cloud Cache
+// Cloud Cache (Pre-load from LocalStorage fallbacks to allow fast offline logins)
 let fbStudents = [];
+try {
+  fbStudents = JSON.parse(localStorage.getItem(DB.STUDENTS) || '[]');
+} catch (e) {
+  console.error('❌ Failed to parse local student cache:', e);
+}
+
 let fbMovements = [];
+try {
+  fbMovements = JSON.parse(localStorage.getItem(DB.MOVEMENTS) || '[]');
+} catch (e) {
+  console.error('❌ Failed to parse local movements cache:', e);
+}
+
 let fbAdminLogins = [];
 let fbGeofence = null;
+try {
+  fbGeofence = JSON.parse(localStorage.getItem('smt_geofence') || 'null');
+} catch (e) {
+  console.error('❌ Failed to parse local geofence cache:', e);
+}
+
 let isCloudReady = false;
 
 /* ── Date and Time Logic ─────────────────────── */
@@ -113,10 +131,7 @@ async function initCloudSync(onReadyCallback) {
 
   // 3.5 Second Safety Fallback Timeout
   const safetyTimeout = setTimeout(async () => {
-    console.warn('⚠️ Cloud Sync timed out! Falling back to local data to prevent hanging screen.');
-    fbStudents = [];
-    fbMovements = [];
-    fbGeofence = null;
+    console.warn('⚠️ Cloud Sync timed out! Falling back to cached local data.');
     isCloudReady = true;
     
     // Seed local admin fallback so they can log in
@@ -143,14 +158,21 @@ async function initCloudSync(onReadyCallback) {
 
     isCloudReady = true;
 
+    // Cache online values to LocalStorage for offline capability
+    localStorage.setItem(DB.STUDENTS, JSON.stringify(fbStudents));
+    localStorage.setItem(DB.MOVEMENTS, JSON.stringify(fbMovements));
+    localStorage.setItem('smt_geofence', JSON.stringify(fbGeofence));
+
     // Attach Real-Time Observers for Cross-Device Sync
     firebaseDB.ref('students').on('value', snap => {
       const raw = snap.val() ? Object.values(snap.val()) : [];
       fbStudents = raw.map(sanitizeStudent);
+      localStorage.setItem(DB.STUDENTS, JSON.stringify(fbStudents));
       window.dispatchEvent(new Event('db_updated'));
     });
     firebaseDB.ref('movements').on('value', snap => {
       fbMovements = snap.val() ? Object.values(snap.val()) : [];
+      localStorage.setItem(DB.MOVEMENTS, JSON.stringify(fbMovements));
       window.dispatchEvent(new Event('db_updated'));
     });
     firebaseDB.ref('admin_logins').on('value', snap => {
@@ -159,6 +181,7 @@ async function initCloudSync(onReadyCallback) {
     });
     firebaseDB.ref('geofence').on('value', snap => {
       fbGeofence = snap.val() || null;
+      localStorage.setItem('smt_geofence', JSON.stringify(fbGeofence));
       window.dispatchEvent(new Event('db_updated'));
     });
 
@@ -169,10 +192,7 @@ async function initCloudSync(onReadyCallback) {
   } catch (err) {
     clearTimeout(safetyTimeout);
     console.error('❌ Cloud sync failed:', err);
-    // Fallback: If DB is empty or permission denied, seed local variables so UI doesn't freeze
-    fbStudents = [];
-    fbMovements = [];
-    fbGeofence = null;
+    // Keep cached students and movements loaded on startup instead of clearing them to []
     isCloudReady = true;
     
     // Seed admin credentials locally as fallback
