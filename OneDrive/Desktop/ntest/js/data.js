@@ -166,6 +166,9 @@ function initCloudSync(onReadyCallback) {
     fbGeofence = null;
     isCloudReady = true;
     
+    // Seed admin credentials locally as fallback
+    seedIfNeeded();
+
     if (err.code === 'PERMISSION_DENIED') {
       console.warn("⚠️ Firebase Security Rules are blocking access! Please verify your database rules.");
     }
@@ -330,7 +333,7 @@ async function seedIfNeeded() {
   if (!adminExists) {
     // 🔓 EMERGENCY PASSWORD RESET (Force Overwrite)
     const hashedPwd = await hashPassword('admin1234');
-    addStudent({
+    const adminObj = {
       id: 'admin',
       name: 'Warden Admin',
       room: '—',
@@ -339,11 +342,17 @@ async function seedIfNeeded() {
       password: hashedPwd,
       role: 'admin',
       last_updated: new Date().toISOString(),
-    });
+    };
+    fbStudents.push(adminObj); // Seed locally first so login works offline
+    addStudent(adminObj).catch(err => console.warn('⚠️ Seeding admin online failed:', err));
   } else if (!localStorage.getItem('admin_force_reset_done_v2')) {
     // ONE-TIME FORCE RESET for existing admin
     const hashedPwd = await hashPassword('admin1234');
-    updateStudent('admin', { password: hashedPwd });
+    const adminIdx = fbStudents.findIndex(s => s.id === 'admin');
+    if (adminIdx !== -1) {
+      fbStudents[adminIdx].password = hashedPwd;
+    }
+    updateStudent('admin', { password: hashedPwd }).catch(err => console.warn('⚠️ Updating admin online failed:', err));
     localStorage.setItem('admin_force_reset_done_v2', 'true');
     console.log('✅ Master admin password forcefully reset to admin1234');
   }
