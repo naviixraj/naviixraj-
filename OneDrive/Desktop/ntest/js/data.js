@@ -96,7 +96,7 @@ function getCurfewStatus() {
 
 /* ── Exports for PWA & Debugging ─────────────── */
 /* ── Cloud Sync Engine ───────────────────────── */
-function initCloudSync(onReadyCallback) {
+async function initCloudSync(onReadyCallback) {
   if (typeof firebaseDB === 'undefined' || !firebaseDB) {
     console.error('❌ Firebase DB missing!');
     if (onReadyCallback) onReadyCallback();
@@ -112,7 +112,7 @@ function initCloudSync(onReadyCallback) {
   };
 
   // 3.5 Second Safety Fallback Timeout
-  const safetyTimeout = setTimeout(() => {
+  const safetyTimeout = setTimeout(async () => {
     console.warn('⚠️ Cloud Sync timed out! Falling back to local data to prevent hanging screen.');
     fbStudents = [];
     fbMovements = [];
@@ -120,18 +120,20 @@ function initCloudSync(onReadyCallback) {
     isCloudReady = true;
     
     // Seed local admin fallback so they can log in
-    seedIfNeeded();
+    await seedIfNeeded();
 
     triggerCallback();
   }, 3500);
 
   // Initial Fetch (Block UI until data loads)
-  Promise.all([
-    firebaseDB.ref('students').once('value'),
-    firebaseDB.ref('movements').once('value'),
-    firebaseDB.ref('admin_logins').once('value'),
-    firebaseDB.ref('geofence').once('value')
-  ]).then(snapshots => {
+  try {
+    const snapshots = await Promise.all([
+      firebaseDB.ref('students').once('value'),
+      firebaseDB.ref('movements').once('value'),
+      firebaseDB.ref('admin_logins').once('value'),
+      firebaseDB.ref('geofence').once('value')
+    ]);
+    
     clearTimeout(safetyTimeout);
     const raw = snapshots[0].val() ? Object.values(snapshots[0].val()) : [];
     fbStudents = raw.map(sanitizeStudent);
@@ -160,11 +162,11 @@ function initCloudSync(onReadyCallback) {
       window.dispatchEvent(new Event('db_updated'));
     });
 
-    // Run seed only after initial data is completely loaded
-    seedIfNeeded();
+    // Await seeding to avoid race conditions during login checks
+    await seedIfNeeded();
 
     triggerCallback();
-  }).catch(err => {
+  } catch (err) {
     clearTimeout(safetyTimeout);
     console.error('❌ Cloud sync failed:', err);
     // Fallback: If DB is empty or permission denied, seed local variables so UI doesn't freeze
@@ -174,13 +176,13 @@ function initCloudSync(onReadyCallback) {
     isCloudReady = true;
     
     // Seed admin credentials locally as fallback
-    seedIfNeeded();
+    await seedIfNeeded();
 
     if (err.code === 'PERMISSION_DENIED') {
       console.warn("⚠️ Firebase Security Rules are blocking access! Please verify your database rules.");
     }
     triggerCallback();
-  });
+  }
 }
 
 /* ── Students CRUD (Cloud) ───────────────────── */
