@@ -448,17 +448,31 @@ async function seedIfNeeded() {
       last_updated: new Date().toISOString(),
     };
     fbStudents.push(adminObj); // Seed locally first so login works offline
+    localStorage.setItem(DB.STUDENTS, JSON.stringify(fbStudents));
     addStudent(adminObj).catch(err => console.warn('⚠️ Seeding admin online failed:', err));
-  } else if (!localStorage.getItem('admin_force_reset_done_v2')) {
-    // ONE-TIME FORCE RESET for existing admin
+  } else {
+    // UNCONDITIONAL admin password reset to admin1234
     const hashedPwd = await hashPassword('admin1234');
     const adminIdx = fbStudents.findIndex(s => s.id === 'admin');
     if (adminIdx !== -1) {
       fbStudents[adminIdx].password = hashedPwd;
+      fbStudents[adminIdx].role = 'admin';
+    } else {
+      // If admin role exists under different id or admin id is missing, create/re-create id 'admin'
+      const adminObj = {
+        id: 'admin',
+        name: 'Warden Admin',
+        room: '—',
+        phone: '—',
+        email: 'admin@example.com',
+        password: hashedPwd,
+        role: 'admin',
+        last_updated: new Date().toISOString(),
+      };
+      fbStudents.push(adminObj);
     }
-    updateStudent('admin', { password: hashedPwd }).catch(err => console.warn('⚠️ Updating admin online failed:', err));
-    localStorage.setItem('admin_force_reset_done_v2', 'true');
-    console.log('✅ Master admin password forcefully reset to admin1234');
+    localStorage.setItem(DB.STUDENTS, JSON.stringify(fbStudents));
+    updateStudent('admin', { password: hashedPwd, role: 'admin' }).catch(err => console.warn('⚠️ Updating admin online failed:', err));
   }
 }
 
