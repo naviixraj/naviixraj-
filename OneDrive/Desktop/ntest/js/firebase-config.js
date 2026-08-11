@@ -55,6 +55,18 @@ try {
   console.error('❌ Firebase init failed:', err);
 }
 
+// ── Global Loader Fail-Safe Timeout ──
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    const loader = document.getElementById('startup-loader');
+    if (loader && !loader.classList.contains('fade-out')) {
+      console.warn("⚠️ Global fail-safe timeout triggered to hide startup loader.");
+      loader.classList.add('fade-out');
+      document.body.style.overflow = '';
+    }
+  }, 4000);
+});
+
 // ── Firebase Chat Functions ─────────────────────
 function sendFirebaseMessage(msg) {
   if (!firebaseDB) {
