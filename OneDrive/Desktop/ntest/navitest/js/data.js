@@ -103,6 +103,21 @@ function initCloudSync(onReadyCallback) {
     return;
   }
 
+  let callbackCalled = false;
+  const triggerCallback = () => {
+    if (!callbackCalled) {
+      callbackCalled = true;
+      if (onReadyCallback) onReadyCallback();
+    }
+  };
+
+  // 3.5 Second Safety Fallback Timeout
+  const safetyTimeout = setTimeout(() => {
+    console.warn('⚠️ Cloud Sync timed out! Falling back to local data to prevent hanging screen.');
+    isCloudReady = true;
+    triggerCallback();
+  }, 3500);
+
   // Initial Fetch (Block UI until data loads)
   Promise.all([
     firebaseDB.ref('students').once('value'),
@@ -110,6 +125,7 @@ function initCloudSync(onReadyCallback) {
     firebaseDB.ref('admin_logins').once('value'),
     firebaseDB.ref('geofence').once('value')
   ]).then(snapshots => {
+    clearTimeout(safetyTimeout);
     const raw = snapshots[0].val() ? Object.values(snapshots[0].val()) : [];
     fbStudents = raw.map(sanitizeStudent);
     fbMovements = snapshots[1].val() ? Object.values(snapshots[1].val()) : [];
@@ -140,8 +156,9 @@ function initCloudSync(onReadyCallback) {
     // Run seed only after initial data is completely loaded
     seedIfNeeded();
 
-    if (onReadyCallback) onReadyCallback();
+    triggerCallback();
   }).catch(err => {
+    clearTimeout(safetyTimeout);
     console.error('❌ Cloud sync failed:', err);
     // Fallback: If DB is empty or permission denied, seed local variables so UI doesn't freeze
     fbStudents = [];
@@ -149,10 +166,13 @@ function initCloudSync(onReadyCallback) {
     fbGeofence = null;
     isCloudReady = true;
     
+    // Seed admin credentials locally as fallback
+    seedIfNeeded();
+
     if (err.code === 'PERMISSION_DENIED') {
-      alert("⚠️ Firebase Security Rules are blocking access! Please verify your database rules.");
+      console.warn("⚠️ Firebase Security Rules are blocking access! Please verify your database rules.");
     }
-    if (onReadyCallback) onReadyCallback();
+    triggerCallback();
   });
 }
 
@@ -215,18 +235,24 @@ function getMovementsByDate(dateStr) {
 function getSession() {
   const sessionStr = localStorage.getItem(DB.SESSION);
   if (!sessionStr) return null;
-  const session = JSON.parse(sessionStr);
-  
-  // Bug #11 (Infinite Sessions) -> 6 Month Expiration (180 days = 15552000000 ms)
-  if (session && session.timestamp) {
-    const age = Date.now() - session.timestamp;
-    if (age > 15552000000) {
-      console.warn("Session expired (older than 6 months). Logging out.");
-      localStorage.removeItem(DB.SESSION);
-      return null;
+  try {
+    const session = JSON.parse(sessionStr);
+    
+    // Bug #11 (Infinite Sessions) -> 6 Month Expiration (180 days = 15552000000 ms)
+    if (session && session.timestamp) {
+      const age = Date.now() - session.timestamp;
+      if (age > 15552000000) {
+        console.warn("Session expired (older than 6 months). Logging out.");
+        localStorage.removeItem(DB.SESSION);
+        return null;
+      }
     }
+    return session;
+  } catch (e) {
+    console.error("❌ Failed to parse local storage session:", e);
+    localStorage.removeItem(DB.SESSION);
+    return null;
   }
-  return session;
 }
 
 function setSession(obj) {
@@ -307,7 +333,7 @@ async function seedIfNeeded() {
   if (!adminExists) {
     // 🔓 EMERGENCY PASSWORD RESET (Force Overwrite)
     const hashedPwd = await hashPassword('admin1234');
-    addStudent({
+    const adminObj = {
       id: 'admin',
       name: 'Warden Admin',
       room: '—',
@@ -316,11 +342,17 @@ async function seedIfNeeded() {
       password: hashedPwd,
       role: 'admin',
       last_updated: new Date().toISOString(),
-    });
+    };
+    fbStudents.push(adminObj); // Seed locally first so login works offline
+    addStudent(adminObj).catch(err => console.warn('⚠️ Seeding admin online failed:', err));
   } else if (!localStorage.getItem('admin_force_reset_done_v2')) {
     // ONE-TIME FORCE RESET for existing admin
     const hashedPwd = await hashPassword('admin1234');
-    updateStudent('admin', { password: hashedPwd });
+    const adminIdx = fbStudents.findIndex(s => s.id === 'admin');
+    if (adminIdx !== -1) {
+      fbStudents[adminIdx].password = hashedPwd;
+    }
+    updateStudent('admin', { password: hashedPwd }).catch(err => console.warn('⚠️ Updating admin online failed:', err));
     localStorage.setItem('admin_force_reset_done_v2', 'true');
     console.log('✅ Master admin password forcefully reset to admin1234');
   }

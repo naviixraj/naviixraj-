@@ -258,11 +258,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const uid = document.getElementById('login-id').value.trim();
       const pwd = document.getElementById('login-pwd').value;
 
+      console.log('🔑 Login attempt for ID:', uid);
       const students = getStudents();
-      const user = students.find(s => s.id === uid);
+      console.log('👥 Currently loaded accounts in cache:', students.map(s => s.id));
+
+      const user = students.find(s => s.id.toLowerCase() === uid.toLowerCase());
 
       if (!user) {
-        loginMsg.textContent = '❌ Invalid ID.';
+        loginMsg.textContent = `❌ Invalid ID. (Loaded accounts: ${students.map(s => s.id).join(', ') || 'none'})`;
         loginMsg.className = 'form-msg error';
         forgotPwdLink.style.display = 'none';
         return;

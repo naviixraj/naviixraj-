@@ -20,11 +20,20 @@ try {
   firebase.initializeApp(firebaseConfig);
   firebaseDB = firebase.database();
 
+  // Sign in anonymously to get an auth context for security rules
+  firebase.auth().signInAnonymously()
+    .then(() => {
+      console.log('🔒 Firebase Anonymous Auth success');
+    })
+    .catch((error) => {
+      console.warn('⚠️ Firebase Anonymous Auth failed:', error.message);
+    });
+
   // Listen to Firebase Auth state for security
   firebase.auth().onAuthStateChanged((user) => {
     if (user) {
       firebaseChatReady = true;
-      console.log('🔐 Signed in as:', user.email);
+      console.log('🔐 Signed in anonymously. User UID:', user.uid);
     } else {
       firebaseChatReady = false;
       console.log('⚠️ User is signed out');
@@ -45,6 +54,18 @@ try {
 } catch (err) {
   console.error('❌ Firebase init failed:', err);
 }
+
+// ── Global Loader Fail-Safe Timeout ──
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    const loader = document.getElementById('startup-loader');
+    if (loader && !loader.classList.contains('fade-out')) {
+      console.warn("⚠️ Global fail-safe timeout triggered to hide startup loader.");
+      loader.classList.add('fade-out');
+      document.body.style.overflow = '';
+    }
+  }, 4000);
+});
 
 // ── Firebase Chat Functions ─────────────────────
 function sendFirebaseMessage(msg) {
