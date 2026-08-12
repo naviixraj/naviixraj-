@@ -152,10 +152,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const photoPreview = document.getElementById('reg-photo-preview');
     let photoBase64 = '';
 
-    photoInput.addEventListener('change', (e) => {
+     photoInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) { photoBase64 = ''; photoPreview.style.display = 'none'; return; }
-      compressImage(file, 200, (dataUrl) => {
+      compressImage(file, 120, (dataUrl) => {
         photoBase64 = dataUrl;
         photoPreview.src = dataUrl;
         photoPreview.style.display = 'block';
@@ -173,7 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
           else { if (h > maxSize) { w = w * maxSize / h; h = maxSize; } }
           canvas.width = w; canvas.height = h;
           canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-          callback(canvas.toDataURL('image/jpeg', 0.7));
+          callback(canvas.toDataURL('image/jpeg', 0.5));
         };
         img.src = ev.target.result;
       };

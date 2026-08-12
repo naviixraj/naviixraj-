@@ -538,12 +538,12 @@ function showProfileModal(student, forced = false) {
       img.onload = () => {
         const canvas = document.createElement('canvas');
         let w = img.width, h = img.height;
-        const max = 200;
+        const max = 120;
         if (w > h) { if (w > max) { h = h * max / w; w = max; } }
         else { if (h > max) { w = w * max / h; h = max; } }
         canvas.width = w; canvas.height = h;
         canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        stuPhotoBase64 = canvas.toDataURL('image/jpeg', 0.7);
+        stuPhotoBase64 = canvas.toDataURL('image/jpeg', 0.5);
         avatarEl.innerHTML = `<img src="${stuPhotoBase64}" class="detail-photo-img">`;
       };
       img.src = ev.target.result;
@@ -597,6 +597,7 @@ function showProfileModal(student, forced = false) {
     const updates = {
       name, email, age, department: dept, year, room, phone,
       password: passwordToSave,
+      photo: stuPhotoBase64,
       last_updated: new Date().toISOString()
     };
  
