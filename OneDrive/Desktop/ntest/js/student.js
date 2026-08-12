@@ -212,6 +212,18 @@ function renderStudentUI(student) {
   badge.textContent = status;
   badge.className = 'status-badge ' + (status === 'IN' ? 'badge-in' : 'badge-out');
 
+  // Update live status banner above profile
+  const liveLabel = document.getElementById('stu-live-status');
+  if (liveLabel) {
+    if (status === 'IN') {
+      liveLabel.textContent = 'Currently Inside';
+      liveLabel.className = 'live-status-label status-in';
+    } else {
+      liveLabel.textContent = 'Currently Outside';
+      liveLabel.className = 'live-status-label status-out';
+    }
+  }
+
   const btnIn = document.getElementById('btn-checkin');
   const btnOut = document.getElementById('btn-checkout');
 
