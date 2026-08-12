@@ -5,7 +5,7 @@
 const firebaseConfig = {
   apiKey: "AIzaSyA0-chN37BdQeq-69TeElXd0RSHULjCJgw",
   authDomain: "nextrack-test.firebaseapp.com",
-  databaseURL: "https://nextrack-test.firebaseio.com",
+  databaseURL: "https://nextrack-test-default-rtdb.firebaseio.com",
   projectId: "nextrack-test",
   storageBucket: "nextrack-test.firebasestorage.app",
   messagingSenderId: "424504345504",
